@@ -2,19 +2,15 @@
 #include<stdlib.h>
 #include<string.h>
 
-// TODO: Implement a priority queue data structure to be used in the Huffman
-//       Coding algorithim
-//       Note: You need to determine what will be the structure of the data to
-//       be kept inside the priority queue
+// TODO: Implement a priority queue data structure to be used in the Huffman Coding algorithim
+//       Note: You need to determine what will be the structure of the data to be kept inside the priority queue
 typedef struct priorityqueue
 {
 	int temp;
 } PQ;
 
-// TODO: Implement a binary tree data structure to be used in the Huffman
-//       Coding algorithm
-//       Note: You need to determine what will be the structure of the node in
-//       the binary tree
+// TODO: Implement a binary tree data structure to be used in the Huffman Coding algorithm
+//       Note: You need to determine what will be the structure of the node in the binary tree
 typedef struct binarytree
 {
 	int temp;
@@ -24,22 +20,23 @@ typedef struct binarytree
 // interactions like reading and writing. You may use it however you please
 typedef struct huffmancodetable
 {
-	int		size;
-	float	*freqs;
-	char	**codes;
+	int size;           // size of table
+	int	*freqs;         // # of occurrances
+	char	**codes;      // ascii
 
 } HCTable;
 
-// These are called function declarations. They are single lines at the top of
-// the file to reference functions. It is a common practice in C to list your
-// function declarations at the top of your file, then have your full main
-// function, then the filled in function definitions at the end of your file.
-// You should not need to change any of these top 5 declarations, but feel free
-// to
+//-------------------------------------------------------------------------
+//-------------------------------------------------------------------------
+
+// These are called function declarations.
+// It is a common practice in C to list your function declarations at the top of your file,
+// then have your full main function, then the filled in function definitions at the end of your file.
+
 void	encode( FILE *plaintext, FILE *codetable, FILE *encodetxt );
 void	decode( FILE *codetable, FILE *encodetxt, FILE *decodetxt );
 HCTable	*initializeHuffmanCodeTable();
-void	insertToHCTable( HCTable *hct, char c, float f, char *code );
+void	insertToHCTable( HCTable *hct, char c, int f, char *code );
 void	deleteHuffmanCodeTable( HCTable *hct );
 // This is the bare minimum you need for implementing a priority queue and BT
 // You will need to write more functions
@@ -51,16 +48,7 @@ void	deleteBinaryTree( BT *bt );
 // My main function only handles the preparation steps of the code. You will not
 // need to edit this function. encode and decode is where you need to write code
 int main( int argc, char **argv) {
-	// I list all my variables at the top of my functions. I do this for many
-	// reasons:
-	//      1. It makes my code easier to read
-	//      2. It makes my code easier to debug
-	//      3. I have less segfaults and bugs in my code since I know exactly
-	//           what memory and pointers I have available
-	//      4. I write smarter and more efficient code since I can see easily
-	//           how many variables I'm using
-	//      5. I also get a chance to comment and describe each variable and
-	//           what they do for the function up here
+	
 	char *mode;            // Encode/Decode argument
 	char *plaintext_path;  // plainText.txt file path argument
 	FILE *plaintext;       // plainText.txt file pointer
@@ -70,9 +58,6 @@ int main( int argc, char **argv) {
 	FILE *encodetxt;       // encodedText.txt file pointer
 	char *decodetxt_path;  // decodedText.txt file path argument
 	FILE *decodetxt;       // decodedText.txt file pointer
-	// For this assignment, try to avoid declaring any variables below this line
-	// Hopefully, this simple challenge will force you to think about your data
-	// structures more. You may find you will spend less time debugging
 
 	if( argc < 5 ) {
 		printf("Not Enough Arguments Supplied\n");
@@ -142,10 +127,8 @@ void encode( FILE *plaintext, FILE *codetable, FILE *encodetxt ) {
 	BT		*bt;     // A binary  tree for the Huffman Coding algorithm
 	HCTable	*hct;    // A closed hash table for storing huffman values
 	int		c;       // Temporary int/char used for iteration
-	float	f;       // A temporary float variable used for iteration
-	// For this assignment, try to avoid declaring any variables below this line
-	// Hopefully, this simple challenge will force you to think about your data
-	// structures more. You may find you will spend less time debugging
+	int	f;       // A temporary float variable used for iteration
+  int code;
 
 	pq = initializePriorityQueue();
 	bt = initializeBinaryTree();
@@ -155,7 +138,9 @@ void encode( FILE *plaintext, FILE *codetable, FILE *encodetxt ) {
 	while( (c = fgetc(plaintext)) != EOF ) {
 		// TODO: calculate the frequency of each character
 		//       c is the variable that stores the character
-    printf("%c",c);
+    f=hct->freqs[c]+1;
+    
+    insertToHCTable( hct, c, f, "a");
 	}
 
 	// TODO: Implement Huffman Coding algorithm, as described in the referenced
@@ -178,8 +163,8 @@ void encode( FILE *plaintext, FILE *codetable, FILE *encodetxt ) {
 
 	// This writes the codetable file
 	for( c = 0; c < 128; c++ ) {
-		if( hct->freqs[c] != 0.0f )
-			fprintf( codetable, "%c,%s,%f\n", c, hct->codes[c], hct->freqs[c]);
+		if( hct->freqs[c] != 0 )
+			fprintf( codetable, "%c,%s,%d\n", c, hct->codes[c], hct->freqs[c]);
 	}
 
 	// TODO: Calculate compression statistics and print it to standard output.
@@ -198,17 +183,14 @@ void encode( FILE *plaintext, FILE *codetable, FILE *encodetxt ) {
 void decode( FILE *codetable, FILE *encodetxt, FILE *decodetxt ) {
 	HCTable	*hct;        // A closed hash table used for storing huffman values
 	int		c, ce, cd;   // Temporary int/char used for iteration
-	float	f;           // A temporary float variable used for iteration
+	int	f;           // A temporary float variable used for iteration
 	char	buf[128];    // A temporary buffer used for iteration
-	// For this assignment, try to avoid declaring any variables below this line
-	// Hopefully, this simple challenge will force you to think about your data
-	// structures more. You may find you will spend less time debugging
 
 	hct = initializeHuffmanCodeTable();
 
 	// This reads the codetable file into a huffman code table. You can use this
 	// table for the remainder of the decoding
-	while( fscanf(codetable, "%c,%[^,],%f", &c, buf, &f) != EOF ){
+	while( fscanf(codetable, "%c,%[^,],%d", &c, buf, &f) != EOF ){
 		if ( c < 32 )
 			continue;
 		insertToHCTable( hct, c, f, buf );
@@ -241,19 +223,16 @@ HCTable *initializeHuffmanCodeTable() {
 	hct = malloc( sizeof(HCTable) );
 	hct->size = 128;
 	hct->codes = malloc( hct->size * sizeof(char *) );
-	hct->freqs = malloc( hct->size * sizeof(float) );
+	hct->freqs = malloc( hct->size * sizeof(int) );
 
 	for( i = 0; i < hct->size; i++ )
-		hct->freqs[i] = 0.0f;
-
+		hct->freqs[i] = 0;
 	return hct;
 }
 
-void insertToHCTable( HCTable *hct, char c, float f, char *code ) {
-	// Another easy function. The main thing to note is that I do not allow
-	// collisions at all. This should not affect your algorithm
+void insertToHCTable( HCTable *hct, char c, int f, char *code ) {
 	// My "hash function" is just using the ASCII value of char c as an index
-	if( hct->freqs[c] != 0.0f )
+	if( hct->freqs[c] != 0 )
 		free(hct->codes[c]);
 
 	hct->freqs[c] = f;
@@ -266,7 +245,7 @@ void deleteHuffmanCodeTable( HCTable *hct ) {
 	int i;
 
 	for( i = 0; i < hct->size; i++ )
-		if( hct->freqs[i] != 0.0f )
+		if( hct->freqs[i] != 0 )
 			free( hct->codes[i] );
 
 	free( hct->codes );
