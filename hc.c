@@ -3,66 +3,62 @@
 #include<string.h>
 
 // TODO: Implement a priority queue data structure to be used in the Huffman Coding algorithim
-//       Note: You need to determine what will be the structure of the data to be kept inside the priority queue
 //-------------------------------------------------------------------------
-// tree nodes
+// nodes for leaves
+typedef struct leafnode
+{
+  int freq;                     // total freq value
+  char ch;                      // character
+  struct node *left, *right;    // if 0 then left, if 1 then right.
+} leafNode;
+// internal nodes
 typedef struct node
 {
-  char ch;                      // character
-	int freq;                     // total freq value
+  int freq;                     // total freq value
   struct node *left, *right;    // if 0 then left, if 1 then right.
 } Node;
+
 //-------------------------------------------------------------------------
-//-------------------------------------------------------------------------
-// min heap
-typedef struct priorityqueue
+// heap
+typedef struct priorityQueue
 {
-	int size;  
-  int capacity;  
-  struct Node** PQptrs;      // array of pointers, makes moving easier
+  int capacity;
+	int size;    
+  struct node *PQptr;
 } PQ;
 
 // TODO: Implement a binary tree data structure to be used in the Huffman Coding algorithm
-//       Note: You need to determine what will be the structure of the node in the binary tree
-typedef struct binarytree
+typedef struct binaryTree
 {
-	struct node *root;  
+	struct node *root;            // will be set to final node built (max total freq)
 } Tree;
 
 // I implemented a basic closed hash table for you to use. I use this for file
 // interactions like reading and writing. You may use it however you please
-typedef struct huffmancodetable
+typedef struct huffmanCodeTable
 {
 	int size;           // size of table
 	int	*freqs;         // # of occurrances
 	char	**codes;      // ascii
-
 } HCTable;
 
 //-------------------------------------------------------------------------
-
-//-------------------------------------------------------------------------
-//-------------------------------------------------------------------------
-
 // These are called function declarations.
-// It is a common practice in C to list your function declarations at the top of your file,
-// then have your full main function, then the filled in function definitions at the end of your file.
-
 void	encode( FILE *plaintext, FILE *codetable, FILE *encodetxt );
 void	decode( FILE *codetable, FILE *encodetxt, FILE *decodetxt );
-HCTable	*initializeHuffmanCodeTable();
+HCTable	*initializehuffmanCodeTable();
 void	insertToHCTable( HCTable *hct, char c, int f, char *code );
-void	deleteHuffmanCodeTable( HCTable *hct );
-// This is the bare minimum you need for implementing a priority queue and Tree
-// You will need to write more functions
-Node  *initializeNode();
-PQ		*initializePriorityQueue();
-void	deletePriorityQueue( PQ *pq );
-Tree		*initializeBinaryTree();
-void	deleteBinaryTree( Tree *bt );
+void	deletehuffmanCodeTable( HCTable *hct );
 
-// My main function only handles the preparation steps of the code. You will not
-// need to edit this function. encode and decode is where you need to write code
+
+leafNode  *initializeLeafNode(char c, int freq);
+internalNode  *initializeInternalNode(int freq);
+PQ		*initializepriorityQueue();
+void	deletepriorityQueue( PQ *pq );
+Tree		*initializebinaryTree();
+void	deletebinaryTree( Tree *bt );
+void printRatio(int asciiBits, int cprBits, int cpRatio);
+
 int main( int argc, char **argv) {
 	
 	char *mode;            // Encode/Decode argument
@@ -133,45 +129,42 @@ int main( int argc, char **argv) {
 	}
 }
 
-
+//-------------------------------------------------------------------------
 // TODO: You need to fill in this function
 void encode( FILE *plaintext, FILE *codetable, FILE *encodetxt ) {
-	// As stated in main, I list all my variable declarations at the top of my
-	// functions. The list is incomplete. Feel free to add, remove, or change
-	// these
+
 	PQ		*pq;     // A priority queue for the Huffman Coding algorithm
 	Tree		*bt;     // A binary  tree for the Huffman Coding algorithm
 	HCTable	*hct;    // A closed hash table for storing huffman values
 	int		c;       // Temporary int/char used for iteration
-	int	f;       // A temporary float variable used for iteration
+	int	f,i;       // A temporary float variable used for iteration
   int code;
-  int leafs=0;
-
-	pq = initializePriorityQueue();
-	bt = initializeBinaryTree();
-	hct = initializeHuffmanCodeTable();
+  int leafs = 0;
+  int asciiBits = 0;
+  int cprBits = 0;
+  int cpRatio = 0;
+  
+  
+	pq = initializepriorityQueue();
+	bt = initializebinaryTree();
+	hct = initializehuffmanCodeTable();
 
 	// This loop will read the file character by character
 	while( (c = fgetc(plaintext)) != EOF ) {
 		// TODO: calculate the frequency of each character
 		//       c is the variable that stores the character
-//-------------------------------------------------------------------------
+    asciiBits++;
+  
     if( hct->freqs[c] == 0 ){
       leafs=leafs+1;
       }
     f=hct->freqs[c]+1;
     insertToHCTable( hct, c, f, "-1" );
 	}
-  printf("leafs: %d\n",leafs);
-	// TODO: Implement Huffman Coding algorithm, as described in the referenced
-	//       text in the previous section, by using the priority queue and Tree
-	//       you implemented
   
-
+	// TODO: Implement Huffman Coding algorithm by using the priority queue and Tree you implemented
+    
   
-  //deleteHuffmanCodeTable( hct );                //*******************
-  //hct = initializeHuffmanCodeTable();           //*******************
-//-------------------------------------------------------------------------//-------------------------------------------------------------------------
 	// TODO: Run the Huffman Coding algorithm on the set of character
 	//       frequencies that you calculated to obtain the Huffman Code tree
 
@@ -193,17 +186,16 @@ void encode( FILE *plaintext, FILE *codetable, FILE *encodetxt ) {
 	}
 
 	// TODO: Calculate compression statistics and print it to standard output.
-	//       Your statistics should consist of the size of the original file in
-	//       terms of bits (number of characters * 8, as we assume they were
-	//       encoded using ASCII), the size of the encoded file in bits, and the
-	//       compression ratio (the ratio of these two numbers in percentage)
-
-	deleteHuffmanCodeTable( hct );
-	deletePriorityQueue( pq );
-	deleteBinaryTree( bt );
+  cprBits = 56;
+  printRatio(asciiBits,cprBits,cpRatio);
+  
+  bt->root = NULL; // ***************************************************
+	deletehuffmanCodeTable( hct );
+	deletepriorityQueue( pq );
+	deletebinaryTree( bt );
 }
 
-
+//-------------------------------------------------------------------------
 // TODO: You need to fill in this function
 void decode( FILE *codetable, FILE *encodetxt, FILE *decodetxt ) {
 	HCTable	*hct;        // A closed hash table used for storing huffman values
@@ -211,7 +203,7 @@ void decode( FILE *codetable, FILE *encodetxt, FILE *decodetxt ) {
 	int	f;           // A temporary float variable used for iteration
 	char	buf[128];    // A temporary buffer used for iteration
 
-	hct = initializeHuffmanCodeTable();
+	hct = initializehuffmanCodeTable();
 
 	// This reads the codetable file into a huffman code table. You can use this
 	// table for the remainder of the decoding
@@ -223,9 +215,8 @@ void decode( FILE *codetable, FILE *encodetxt, FILE *decodetxt ) {
 
 	// TODO: Read the Huffman Code Table and reconstruct the Huffman Coe tree
 	//       (which will be a binary  tree!)
-
+  
 	// TODO: Implement the huffman decoding algorithm
-
 	cd = -1;
 	while( (ce = fgetc(encodetxt)) != EOF ) {
 		// TODO: Decode the characters in the file using your algorithm
@@ -237,10 +228,16 @@ void decode( FILE *codetable, FILE *encodetxt, FILE *decodetxt ) {
 		}
 	}
 
-	deleteHuffmanCodeTable( hct );
+	deletehuffmanCodeTable( hct );
 }
 
-HCTable *initializeHuffmanCodeTable() {
+void printRatio(int asciiBits, int cprBits, int cpRatio){
+  asciiBits = asciiBits * 8;
+  cpRatio = (int)(((float)cprBits/asciiBits)*100);
+  printf("Original: %d bits\nCompressed: %d bits\nCompression Ration: %d%%\n",asciiBits, cprBits, cpRatio);
+}
+
+HCTable *initializehuffmanCodeTable() {
 	// This function is self explanatory. You've seen all this before
 	HCTable *hct;
 	int i;
@@ -267,7 +264,7 @@ void insertToHCTable( HCTable *hct, char c, int f, char *code ) {
 	strcpy( hct->codes[c], code );
 }
 
-void deleteHuffmanCodeTable( HCTable *hct ) {
+void deletehuffmanCodeTable( HCTable *hct ) {
 	// Self explanatory, you've seen this all before
 	int i;
 
@@ -279,62 +276,51 @@ void deleteHuffmanCodeTable( HCTable *hct ) {
 	free( hct->freqs );
 	free( hct );
 }
-
 //-------------------------------------------------------------------------
-Node  *initializeNode(char c, int freq, Node *left, Node *right){
-  Node *myNode = malloc(sizeof(Node));
+//-------------------------------------------------------------------------
+leafNode  *initializeLeafNode(char c, int freq){
+  leafNode *myNode = malloc(sizeof(leafNode));
   myNode->ch = c;
   myNode->freq = freq;
   myNode->left = NULL;
   myNode->right = NULL;
   return myNode;
-
-  printf("initNode: Implement me\n");
 }
-//-------------------------------------------------------------------------
-//-------------------------------------------------------------------------
 
-PQ *initializePriorityQueue(int leafs) {
-	// TODO: Implement a priority queue data structure to be used in the Huffman
-	//       Coding algorithim
-//-------------------------------------------------------------------------
+Node  *initializeNode(int freq, ){
+  Node *myNode = malloc(sizeof(Node));
+  myNode->freq = min1->freq + min2->freq;
+  myNode->left = min1;
+  myNode->right = min2;
+  return myNode;
+}
+
+PQ *initializepriorityQueue(int leafs) {
+	// TODO: Implement a priority queue data structure to be used in the Huffman Coding algorithim
   PQ *myPQ = malloc(sizeof(PQ));
-  myPQ->size=0;
   myPQ->capacity=leafs;
-  myPQ->PQptrs=malloc(sizeof(Node)*leafs);
+  myPQ->size=0;
+  myPQ->PQptr=malloc(sizeof(Node)*leafs);
   return myPQ;
+}
 //-------------------------------------------------------------------------
 //-------------------------------------------------------------------------
-	printf("initPQ: Implement me\n");
+
+
+
+void deletepriorityQueue( PQ *myPQ ) {
+	// Remember to use this function to free all the data you malloc for your priority queue
 }
 
-void deletePriorityQueue( PQ *pq ) {
-	// Remember to use this function to free all the data you malloc for your
-	// priority queue
-
-	printf("del PQ: Implement me\n");
-}
-
-
-
-Tree *initializeBinaryTree() {
+Tree *initializebinaryTree() {
 	// TODO: Implement a binary  tree (Tree) data structure to be used in
 	//       the Huffman Coding algorithm
-  /*
   Tree *myTree = malloc(sizeof(Tree));
-  myTree->root=NULL;
+  myTree->root=NULL;              // will point to root in minHeap aka PQ
   return myTree;
-  */
-	printf("Tree: Implement me\n");
 }
 
-
-void deleteBinaryTree( Tree *bt ) {
-	// Remember to use this function to free all the data you malloc for your
-	// binary  tree
-
-	printf("del Tree: Implement me\n");
+void deletebinaryTree( Tree *bt ) {
+	// Remember to use this function to free all the data you malloc for your binary  tree
+  
 }
-
-
-
